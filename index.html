@@ -1,97 +1,154 @@
-<!DOCTYPE html>
+<!DOCTYPE html>. 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Obfuscator</title>
+  <title>DIAMOND OBFUSCATOR</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#0d0d0d; color:#f1f1f1; text-align:center; padding:20px; }
-    textarea { width:90%; height:180px; margin:10px; padding:10px; font-size:14px; border-radius:8px; background:#1a1a1a; color:#0ff; }
-    button { margin:5px; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:14px; transition:0.2s; }
-    button:hover { opacity:0.85; }
-    .gen { background:#e91e63; color:#fff; }
-    .copy { background:#2196f3; color:#fff; }
-    .download { background:#4caf50; color:#fff; }
-    select { margin:5px; padding:5px; border-radius:6px; background:#1a1a1a; color:#fff; border:1px solid #444; }
-    h1 { color:#ff4081; }
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: "Courier New", monospace;
+      color: #80dfff;
+      overflow: hidden;
+      animation: rainbow 10s linear infinite;
+      background-size: 400% 400%;
+    }
+
+    @keyframes rainbow {
+      0% { background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); }
+      50% { background: linear-gradient(135deg, #8f00ff, #0000ff, #00ff00, #ffff00, #ff7f00, #ff0000); }
+      100% { background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); }
+    }
+
+    .container {
+      background: rgba(0,0,0,0.8);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      width: 90%;
+      max-width: 800px;
+      box-shadow: 0 0 25px #80dfff;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin: 0;
+      text-shadow: 0 0 15px #80dfff;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      font-weight: normal;
+      margin-top: 5px;
+      color: #b3ecff;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      background: #0a0a0a;
+      border: 2px solid #80dfff;
+      color: #80dfff;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 14px;
+      resize: none;
+      margin: 10px 0;
+      box-shadow: inset 0 0 8px #80dfff;
+    }
+
+    button {
+      background: #0d0d0d;
+      border: 2px solid #80dfff;
+      color: #80dfff;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.3s;
+      text-shadow: 0 0 8px #80dfff;
+    }
+
+    button:hover {
+      background: #80dfff;
+      color: #0d0d0d;
+      text-shadow: none;
+    }
   </style>
 </head>
 <body>
-  <h1>✨ Lua Obfuscator ✨</h1>
-  <p>Paste your Roblox Lua script below:</p>
-  <textarea id="input" placeholder="Enter Lua script here..."></textarea><br>
-  <label>Layers: </label>
-  <select id="layerCount">
-    <option value="1">1</option>
-    <option value="3">3</option>
-    <option value="5" selected>5</option>
-    <option value="7">7</option>
-    <option value="10">10</option>
-  </select><br>
-  <button class="gen" onclick="generate()">Obfuscate</button>
-  <button class="copy" onclick="copyCode()">Copy</button>
-  <button class="download" onclick="downloadCode()">Download</button>
-  <h3>Obfuscated Output:</h3>
-  <textarea id="output" readonly></textarea>
+  <div class="container">
+    <h1>DIAMOND OBFUSCATOR</h1>
+    <h2>Luau</h2>
+    <textarea id="input" placeholder="Paste your Luau code here..."></textarea>
+    <div>
+      <button onclick="obfuscate()">Obfuscate</button>
+      <button onclick="copyOutput()">Copy</button>
+      <button onclick="downloadOutput()">Download</button>
+    </div>
+    <textarea id="output" placeholder="Obfuscated code will appear here..."></textarea>
+  </div>
 
-<script>
-const WHITELIST = ["loadstring","game","Instance","workspace","script","math","string","table","pairs","ipairs"];
+  <script>
+    function randomName() {
+      return "__" + Math.random().toString(36).substring(2, 8);
+    }
 
-function encodeToCharList(s){
-  const codes = [];
-  for(let i=0;i<s.length;i++){
-    codes.push(s.charCodeAt(i));
-  }
-  return codes.join(",");
-}
+    function encodeLayer(code) {
+      let encoded = [];
+      for (let i = 0; i < code.length; i++) {
+        encoded.push(code.charCodeAt(i) + Math.floor(Math.random() * 5));
+      }
+      return "loadstring((function() local t={" + encoded.join(",") + "} " +
+             "for i=1,#t do t[i]=string.char(t[i]-" + Math.floor(Math.random() * 5) + ") end " +
+             "return table.concat(t) end)())()";
+    }
 
-function junkLine(){
-  const a = Math.floor(Math.random()*9999);
-  const b = Math.floor(Math.random()*9999);
-  return "local _x" + a + " = " + b + " * " + (b%7+1) + "\n";
-}
+    function obfuscate() {
+      let code = document.getElementById("input").value;
+      if (!code.trim()) {
+        alert("Please paste code to obfuscate!");
+        return;
+      }
 
-function buildLayers(payload, layers){
-  let current = payload;
-  for(let i=0;i<layers;i++){
-    const codeList = encodeToCharList(current);
-    let wrapper = "loadstring(string.char(" + codeList + "))()";
+      // Add fake layers
+      let obf = "--[[ Obfuscated by Diamond ]]\n\n";
+      for (let i = 0; i < 3; i++) {
+        obf += "-- Fake Layer " + (i+1) + "\n" +
+               "if false then " + randomName() + " = " + Math.floor(Math.random()*999999) + " end\n\n";
+      }
 
-    let junk = "";
-    const junkCount = Math.floor(Math.random()*3)+1;
-    for(let j=0;j<junkCount;j++){ junk += junkLine(); }
+      // Multi-layer encode (3 times for now)
+      let layered = code;
+      for (let i = 0; i < 3; i++) {
+        layered = encodeLayer(layered);
+      }
 
-    current = junk + wrapper;
-  }
-  return "--[[ Obfuscated by Diamond ]]--\n" + current;
-}
+      obf += layered;
 
-function generate(){
-  const input = document.getElementById("input").value;
-  if(!input){ alert("Please paste your Lua script!"); return; }
-  const layers = parseInt(document.getElementById("layerCount").value);
-  const result = buildLayers(input, layers);
-  document.getElementById("output").value = result;
-}
+      document.getElementById("output").value = obf;
+    }
 
-function copyCode(){
-  const out = document.getElementById("output");
-  out.select();
-  document.execCommand("copy");
-  alert("Copied to clipboard!");
-}
+    function copyOutput() {
+      let output = document.getElementById("output");
+      output.select();
+      document.execCommand("copy");
+      alert("Copied obfuscated code!");
+    }
 
-function downloadCode(){
-  const out = document.getElementById("output").value;
-  if(!out){ alert("Generate code first!"); return; }
-  const randName = Math.floor(Math.random()*9999999) + ".lua";
-  const blob = new Blob([out], { type: "text/plain" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = randName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-</script>
+    function downloadOutput() {
+      let text = document.getElementById("output").value;
+      let blob = new Blob([text], { type: "text/plain" });
+      let link = document.createElement("a");
+      let fileName = "Obf_" + Math.floor(Math.random() * 99999) + ".lua";
+      link.download = fileName;
+      link.href = window.URL.createObjectURL(blob);
+      link.click();
+    }
+  </script>
 </body>
   </html>
