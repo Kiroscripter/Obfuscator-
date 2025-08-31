@@ -1,201 +1,198 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DIAMOND OBFUSCATOR</title>
 <style>
-  * { box-sizing: border-box; margin:0; padding:0; }
   body {
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg,#0a1a2f,#061026);
-    color: #cce6ff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #0f172a;
+    color: #cbd5e1;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
     align-items: center;
-    justify-content: flex-start;
-    padding: 20px;
   }
   header {
+    background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+    padding: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 5px #38bdf8;
+    width: 100%;
     text-align: center;
+  }
+  #subTitle {
+    font-size: 16px;
+    color: #94a3b8;
+    margin-top: -10px;
     margin-bottom: 20px;
   }
-  header h1 {
-    font-size: 2.5rem;
-    color: #00ccff;
-    text-shadow: 0 0 10px #00ccff;
-  }
-  header h2 {
-    font-size: 1rem;
-    color: #99ddff;
-    margin-top: 5px;
-  }
   #dropZone {
-    border: 2px dashed #00ccff;
+    border: 2px dashed #38bdf8;
     border-radius: 12px;
+    padding: 30px;
     width: 90%;
-    max-width: 800px;
-    padding: 20px;
-    text-align: center;
-    background: #061026;
-    color: #99ddff;
-    margin-bottom: 15px;
-    transition: all 0.3s;
+    max-width: 700px;
+    margin: 10px auto;
+    background: #1e293b;
+    color: #94a3b8;
+    transition: 0.3s;
+    cursor: pointer;
   }
   #dropZone.dragover {
-    background: #0a1a2f;
-    border-color: #00ccff;
-    color: #00ccff;
+    background: #0f172a;
+    color: #38bdf8;
+    border-color: #0ea5e9;
+  }
+  input[type="file"] {
+    margin-top: 10px;
+    color: #cbd5e1;
   }
   textarea {
     width: 90%;
-    max-width: 800px;
-    min-height: 200px;
-    background: #061026;
-    border: 2px solid #003366;
+    max-width: 700px;
+    height: 220px;
+    margin: 15px auto;
+    display: block;
+    background: #1e293b;
+    color: #38bdf8;
+    border: 2px solid #0ea5e9;
     border-radius: 10px;
     padding: 10px;
     font-family: monospace;
-    color: #00ffea;
-    margin-bottom: 10px;
     resize: vertical;
+    box-shadow: 0 0 10px #38bdf855;
   }
   button {
-    padding: 12px 20px;
-    margin: 5px;
+    padding: 12px 25px;
+    margin: 10px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
-    background: #00ccff;
-    color: #000;
-    box-shadow: 0 0 12px #00ccff55;
-    transition: 0.3s;
+    background: #38bdf8;
+    color: #0f172a;
+    box-shadow: 0 0 15px #38bdf855;
+    transition: 0.2s;
   }
   button:hover {
-    background: #0099cc;
-    box-shadow: 0 0 18px #00ccff;
+    background: #0ea5e9;
+    box-shadow: 0 0 20px #38bdf8aa;
   }
   footer {
-    margin-top: auto;
+    margin-top: 20px;
+    padding: 10px;
     font-size: 14px;
-    color: #99bbcc;
+    color: #94a3b8;
   }
 </style>
 </head>
 <body>
-<header>
-  <h1>DIAMOND OBFUSCATOR</h1>
-  <h2>Luau</h2>
-</header>
+  <header>💎 DIAMOND OBFUSCATOR</header>
+  <div id="subTitle">Luau Code Obfuscator by KiRO</div>
 
-<div id="dropZone">
-  <p>📂 Drag & Drop Luau file here or</p>
-  <input type="file" id="fileInput" accept=".lua,.luau,.txt">
-</div>
+  <div id="dropZone">
+    <p>📂 Drag & Drop your Luau file here or</p>
+    <input type="file" id="fileInput" accept=".lua,.luau,.txt">
+  </div>
 
-<textarea id="inputCode" placeholder="Or paste your Luau code here..."></textarea>
-<div>
+  <textarea id="inputCode" placeholder="Or paste your Luau code here..."></textarea>
   <button onclick="obfuscateCode()">Obfuscate</button>
   <button onclick="copyOutput()">Copy Output</button>
   <button onclick="downloadOutput()">Download Obfuscated</button>
-</div>
-<textarea id="outputCode" placeholder="Obfuscated code will appear here..." readonly></textarea>
+  <textarea id="outputCode" placeholder="Obfuscated code will appear here..." readonly></textarea>
 
-<footer>Made by Diamond Obfuscator 🚀</footer>
+  <footer>Made by KiRO • Safe & fast obfuscation</footer>
 
-<script>
-function randomVar() {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let name = "";
-  for (let i = 0; i < 8; i++) name += chars.charAt(Math.floor(Math.random() * chars.length));
-  return name;
-}
+  <script>
+    // Random variable generator
+    function randomVar() {
+      let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let name = "";
+      for (let i = 0; i < 8; i++) name += chars.charAt(Math.floor(Math.random()*chars.length));
+      return name;
+    }
 
-function encodeString(str) {
-  let encoded = "";
-  for (let i = 0; i < str.length; i++) encoded += "\\" + str.charCodeAt(i).toString(16);
-  return '"' + encoded + '"';
-}
+    // String encoder
+    function encodeString(str) {
+      let enc = "";
+      for (let i = 0; i < str.length; i++) enc += "\\" + str.charCodeAt(i).toString(16);
+      return '"' + enc + '"';
+    }
 
-function chunkedReplace(text, callback, chunkSize = 20000, onComplete = null) {
-  let start = 0;
-  function processChunk() {
-    const end = Math.min(start + chunkSize, text.length);
-    const chunk = text.slice(start, end);
-    const result = callback(chunk, start);
-    if (start === 0) text = result; else text = text.slice(0, start) + result + text.slice(end);
-    start += chunkSize;
-    if (start < text.length) setTimeout(processChunk, 0);
-    else if (onComplete) onComplete(text);
-  }
-  processChunk();
-}
+    function obfuscateCode() {
+      let input = document.getElementById("inputCode").value;
+      if(!input.trim()){ alert("Paste some code!"); return; }
 
-function obfuscateCode() {
-  let input = document.getElementById("inputCode").value;
-  if (!input.trim()) { alert("Paste Luau code first!"); return; }
+      // Replace variables
+      let varMap = {};
+      let obf = input.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, (match)=>{
+        if(["local","function","end","if","then","else","elseif","for","while","do","return","true","false","nil"].includes(match)) return match;
+        if(!varMap[match]) varMap[match]=randomVar();
+        return varMap[match];
+      });
 
-  const varMap = {};
-  const reserved = ["local","function","end","if","then","else","elseif","for","while","do","return","true","false","nil"];
+      // Encode strings
+      obf = obf.replace(/"([^"]*)"/g, (_,str)=>encodeString(str));
 
-  chunkedReplace(input, (chunk) => {
-    return chunk.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, match => {
-      if (reserved.includes(match)) return match;
-      if (!varMap[match]) varMap[match] = randomVar();
-      return varMap[match];
+      // Designed 5-line header
+      const header = `--[[══════════════════════════════════
+--[[      OBFUSCATED BY KIRO          
+--[[      LUAU DIAMOND OBFUSCATOR      
+--[[      PROTECTED & SECURED            
+--[[══════════════════════════════════\n`;
+
+      // Combine header + one-line obfuscation
+      document.getElementById("outputCode").value = header + obf.replace(/\n/g,'');
+    }
+
+    function copyOutput() {
+      let out = document.getElementById("outputCode");
+      out.select();
+      out.setSelectionRange(0,99999);
+      document.execCommand("copy");
+      alert("Copied!");
+    }
+
+    function downloadOutput() {
+      const code = document.getElementById("outputCode").value;
+      const blob = new Blob([code], {type: "text/plain"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "obfuscated.lua";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // File drag & drop
+    const dropZone = document.getElementById("dropZone");
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if(file){
+        const reader = new FileReader();
+        reader.onload = ev => document.getElementById("inputCode").value = ev.target.result;
+        reader.readAsText(file);
+      }
     });
-  }, 30000, (obf) => {
-    obf = obf.replace(/"([^"]*)"/g, (_, str) => encodeString(str));
-    obf = "--[[Obfuscated By Diamond Obfuscator]] " + obf.replace(/\n/g, " ");
-    document.getElementById("outputCode").value = obf;
-    alert("Obfuscation complete!");
-  });
-}
 
-function copyOutput() {
-  const output = document.getElementById("outputCode");
-  output.select();
-  output.setSelectionRange(0, 999999);
-  document.execCommand("copy");
-  alert("Copied!");
-}
-
-function downloadOutput() {
-  const obf = document.getElementById("outputCode").value;
-  if (!obf) { alert("Nothing to download!"); return; }
-  const blob = new Blob([obf], {type: "text/plain"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "obfuscated.lua";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById("fileInput").addEventListener("change", function(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => document.getElementById("inputCode").value = ev.target.result;
-  reader.readAsText(file);
-});
-
-const dropZone = document.getElementById("dropZone");
-dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
-dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
-dropZone.addEventListener("drop", e => {
-  e.preventDefault();
-  dropZone.classList.remove("dragover");
-  const file = e.dataTransfer.files[0];
-  if(file){
-    const reader = new FileReader();
-    reader.onload = ev => document.getElementById("inputCode").value = ev.target.result;
-    reader.readAsText(file);
-  }
-});
-</script>
+    document.getElementById("fileInput").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if(file){
+        const reader = new FileReader();
+        reader.onload = ev => document.getElementById("inputCode").value = ev.target.result;
+        reader.readAsText(file);
+      }
+    });
+  </script>
 </body>
 </html>
