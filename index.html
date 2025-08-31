@@ -1,164 +1,255 @@
-<!DOCTYPE html>. 
+<!DOCTYPE html> 
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DIAMOND OBFUSCATOR</title>
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: "Courier New", monospace;
-      color: #80dfff;
-      overflow: hidden;
-      background: black;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DIAMOND OBFUSCATOR</title>
+<style>
+  :root {
+    --neon: #84e0ff;
+    --bg: #000;
+    --panel: rgba(6,6,6,0.95);
+  }
+  html,body { height:100%; margin:0; background:#000; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial; color:var(--neon); -webkit-font-smoothing:antialiased; }
+  /* animated rainbow corners: big conic gradient rotated continuously behind the page */
+  body::before {
+    content:"";
+    position:fixed;
+    inset:-30%;
+    background: conic-gradient(from 0deg, #ff2d55, #ff7a00, #ffde00, #00e676, #00b0ff, #7c4dff, #ff2d55);
+    filter: blur(60px) saturate(140%);
+    z-index:0;
+    animation:spin 3.8s linear infinite;
+    transform-origin:center;
+    pointer-events:none;
+  }
+  @keyframes spin{ to { transform: rotate(360deg); } }
 
-    /* Animated rainbow corners */
-    body::before {
-      content: "";
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: conic-gradient(
-        red, orange, yellow, lime, cyan, blue, magenta, red
-      );
-      animation: spin 6s linear infinite;
-      z-index: 0;
-    }
+  .wrap { position:relative; z-index:1; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:28px; }
+  .card {
+    width:100%; max-width:1000px; background:var(--panel); border-radius:14px; box-shadow:0 8px 40px rgba(0,0,0,0.6), 0 0 40px rgba(132,224,255,0.08) inset;
+    padding:22px; backdrop-filter: blur(4px);
+  }
+  .header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
+  .title { font-size:20px; font-weight:700; letter-spacing:1px; color:var(--neon); text-shadow:0 0 12px rgba(132,224,255,0.25); }
+  .sub { color:#c9f7ff66; font-size:12px; }
+  .row { display:flex; gap:12px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  textarea, pre, .output {
+    width:100%;
+    min-height:160px;
+    resize:vertical;
+    border-radius:10px;
+    border:1px solid rgba(132,224,255,0.08);
+    background:#070707;
+    color:var(--neon);
+    padding:12px;
+    font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,monospace;
+    font-size:13px;
+    box-shadow: inset 0 0 14px rgba(132,224,255,0.02);
+  }
+  .controls { display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  .btn {
+    background:transparent;
+    border:1px solid rgba(132,224,255,0.12);
+    color:var(--neon);
+    padding:10px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+    transition: all 0.12s ease;
+  }
+  .btn.primary { background: linear-gradient(90deg, rgba(132,224,255,0.06), rgba(132,224,255,0.02)); box-shadow:0 6px 20px rgba(132,224,255,0.03); }
+  .btn:hover { transform:translateY(-2px); box-shadow:0 10px 40px rgba(0,0,0,0.6); }
+  .small { font-size:13px; color:#bfeeffcc; }
+  label { font-size:13px; color:#bfeeffcc; display:flex; gap:8px; align-items:center; }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+  .footer-note { color:#aee9ff66; font-size:12px; margin-top:10px; }
+  .controls .spacer { flex:1; min-width:10px; }
 
-    .container {
-      position: relative;
-      z-index: 1;
-      background: rgba(0,0,0,0.9);
-      border-radius: 20px;
-      padding: 20px;
-      text-align: center;
-      width: 90%;
-      max-width: 800px;
-      box-shadow: 0 0 30px #80dfff;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin: 0;
-      text-shadow: 0 0 15px #80dfff;
-    }
-
-    h2 {
-      font-size: 1.2rem;
-      font-weight: normal;
-      margin-top: 5px;
-      color: #b3ecff;
-    }
-
-    textarea {
-      width: 100%;
-      height: 200px;
-      background: #0a0a0a;
-      border: 2px solid #80dfff;
-      color: #80dfff;
-      border-radius: 12px;
-      padding: 10px;
-      font-size: 14px;
-      resize: none;
-      margin: 10px 0;
-      box-shadow: inset 0 0 8px #80dfff;
-    }
-
-    button {
-      background: #0d0d0d;
-      border: 2px solid #80dfff;
-      color: #80dfff;
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 10px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: 0.3s;
-      text-shadow: 0 0 8px #80dfff;
-    }
-
-    button:hover {
-      background: #80dfff;
-      color: #0d0d0d;
-      text-shadow: none;
-    }
-  </style>
+  /* responsive */
+  @media (max-width:640px){
+    .header { flex-direction:column; align-items:flex-start; gap:6px; }
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>DIAMOND OBFUSCATOR</h1>
-    <h2>Luau</h2>
-    <textarea id="input" placeholder="Paste your Luau code here..."></textarea>
-    <div>
-      <button onclick="obfuscate()">Obfuscate</button>
-      <button onclick="copyOutput()">Copy</button>
-      <button onclick="downloadOutput()">Download</button>
+  <div class="wrap">
+    <div class="card" role="main" aria-label="Diamond Obfuscator">
+      <div class="header">
+        <div>
+          <div class="title">DIAMOND OBFUSCATOR</div>
+          <div class="sub">Luau / Roblox — safe multi-layer encoder</div>
+        </div>
+        <div class="small">Header added: <strong style="color:var(--neon);">--[[ Obfuscated by Diamond ]]</strong></div>
+      </div>
+
+      <label class="small">Paste your Luau (client) code below</label>
+      <textarea id="input" placeholder="Paste Lua code here (test first with: print('Hello'))"></textarea>
+
+      <div class="row">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <label class="small">Layers
+            <select id="layers" style="margin-left:8px;padding:6px;border-radius:8px;background:#080808;color:var(--neon);border:1px solid rgba(132,224,255,0.08);">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5" selected>5</option>
+              <option value="7">7</option>
+              <option value="10">10</option>
+            </select>
+          </label>
+
+          <label class="small">
+            <input type="checkbox" id="includeJunk" checked style="transform:scale(1.05)"/> Insert harmless junk
+          </label>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="controls">
+          <button class="btn primary" id="obfBtn">OBFUSCATE</button>
+          <button class="btn" id="copyBtn">COPY</button>
+          <button class="btn" id="downloadBtn">DOWNLOAD</button>
+          <button class="btn" id="clearBtn">CLEAR</button>
+        </div>
+      </div>
+
+      <label class="small" style="margin-top:12px;">Obfuscated output — paste this into your executor (must support <code>loadstring</code>)</label>
+      <textarea id="output" readonly placeholder="Output will appear here"></textarea>
+
+      <div class="footer-note">
+        Notes: This tool encodes with nested <code>string.char(...)</code> layers (no backslash escapes).<br>
+        <strong>Test</strong> with a small payload first (e.g. <code>print("Hello")</code>). If your executor blocks <code>loadstring</code>, obfuscated script cannot run.
+      </div>
     </div>
-    <textarea id="output" placeholder="Obfuscated code will appear here..."></textarea>
   </div>
 
-  <script>
-    function randomName() {
-      return "__" + Math.random().toString(36).substring(2, 8);
+<script>
+/* ---- Utility / safe obfuscation functions ----
+   - Uses only string.char numbers for encoding (no backslash escapes).
+   - Wraps previous layer exactly (so decoding works).
+   - Optional harmless "junk" lines like: local _x123 = 456
+   - DOES NOT rename builtins (safe whitelist behavior by avoiding renaming entirely).
+*/
+
+function encodeToCharList(str){
+  // returns CSV of code points, e.g. "112,114,105,110,116,40,34,72..."
+  const codes = [];
+  for (let i = 0; i < str.length; i++){
+    codes.push(str.charCodeAt(i));
+  }
+  return codes.join(",");
+}
+
+function makeJunkLine(){
+  const a = Math.floor(Math.random()*90000)+1000;
+  const b = Math.floor(Math.random()*90000)+1000;
+  // simple harmless expression, valid Lua
+  return "local _x" + a + " = " + b + " * " + (b % 7 + 1) + "\n";
+}
+
+function wrapWithLoadstring(source){
+  // safe wrapper: loadstring(string.char(...))()
+  const codes = encodeToCharList(source);
+  return "loadstring(string.char(" + codes + "))()";
+}
+
+function buildLayers(payload, layerCount, includeJunk){
+  // Build from innermost (original) outward
+  let current = payload;
+  for (let i = 0; i < layerCount; i++){
+    let wrapper = wrapWithLoadstring(current);
+    if (includeJunk){
+      // Add 1..2 junk lines before the wrapper (harmless)
+      const junkCount = 1 + Math.floor(Math.random()*2);
+      let junk = "";
+      for (let j=0;j<junkCount;j++) junk += makeJunkLine();
+      current = junk + wrapper;
+    } else {
+      current = wrapper;
     }
+    // loop continues: next iteration will encode the entire current string
+  }
+  // add header comment (explicitly requested)
+  return "--[[ Obfuscated by Diamond ]]\n" + current;
+}
 
-    function encodeLayer(code) {
-      let encoded = [];
-      for (let i = 0; i < code.length; i++) {
-        encoded.push(code.charCodeAt(i) + Math.floor(Math.random() * 5));
-      }
-      return "loadstring((function() local t={" + encoded.join(",") + "} " +
-             "for i=1,#t do t[i]=string.char(t[i]-" + Math.floor(Math.random() * 5) + ") end " +
-             "return table.concat(t) end)())()";
+/* ---- DOM wiring ---- */
+const obfBtn = document.getElementById("obfBtn");
+const copyBtn = document.getElementById("copyBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+const clearBtn = document.getElementById("clearBtn");
+const inputEl = document.getElementById("input");
+const outputEl = document.getElementById("output");
+
+obfBtn.addEventListener("click", () => {
+  const src = inputEl.value;
+  if (!src || !src.trim()){
+    alert("Paste some Lua code first (test with: print('Hello'))");
+    return;
+  }
+  const layers = Math.max(1, parseInt(document.getElementById("layers").value || "5", 10));
+  const includeJunk = !!document.getElementById("includeJunk").checked;
+
+  // Build layers (this is the safe function)
+  try {
+    // Small guard: warn if very large
+    if (src.length > 15000 && layers >= 7){
+      if (!confirm("Input is large and many layers may create a huge output. Continue?")) return;
     }
+    const obf = buildLayers(src, layers, includeJunk);
+    outputEl.value = obf;
+    // focus output for convenience
+    outputEl.scrollTop = 0;
+  } catch (err) {
+    alert("Unexpected error while obfuscating: " + (err && err.message ? err.message : err));
+    console.error(err);
+  }
+});
 
-    function obfuscate() {
-      let code = document.getElementById("input").value;
-      if (!code.trim()) {
-        alert("Please paste code to obfuscate!");
-        return;
-      }
-
-      let obf = "--[[ Obfuscated by Diamond ]]\n\n";
-
-      // Multi-layer encode (3 layers default)
-      let layered = code;
-      for (let i = 0; i < 3; i++) {
-        layered = encodeLayer(layered);
-      }
-
-      obf += layered;
-
-      document.getElementById("output").value = obf;
+copyBtn.addEventListener("click", async () => {
+  const text = outputEl.value;
+  if (!text) { alert("Nothing to copy — generate output first."); return; }
+  // modern API
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Copied to clipboard!");
+      return;
+    } catch (e) {
+      // fallback
     }
+  }
+  // fallback: select & execCommand
+  outputEl.select();
+  document.execCommand("copy");
+  alert("Copied to clipboard!");
+});
 
-    function copyOutput() {
-      let output = document.getElementById("output");
-      output.select();
-      document.execCommand("copy");
-      alert("Copied obfuscated code!");
-    }
+downloadBtn.addEventListener("click", () => {
+  const text = outputEl.value;
+  if (!text) { alert("Nothing to download — generate output first."); return; }
+  const name = "diamond_" + (Math.floor(Math.random()*900000)+100000) + ".lua";
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 3000);
+});
 
-    function downloadOutput() {
-      let text = document.getElementById("output").value;
-      let blob = new Blob([text], { type: "text/plain" });
-      let link = document.createElement("a");
-      let fileName = "Obf_" + Math.floor(Math.random() * 99999) + ".lua";
-      link.download = fileName;
-      link.href = window.URL.createObjectURL(blob);
-      link.click();
-    }
-  </script>
+clearBtn.addEventListener("click", () => {
+  inputEl.value = "";
+  outputEl.value = "";
+});
+
+/* ---- quick test helper (not shown) - you can use it from the console:
+   buildLayers('print(\"Hello\")', 3, true)
+   -> will return a string you can paste into your executor
+*/
+</script>
 </body>
   </html>
