@@ -1,187 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Luau Obfuscator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: #eee;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #1f1f1f;
-      padding: 20px;
-      font-size: 24px;
-      font-weight: bold;
-      color: #00ff9d;
-      text-shadow: 0 0 10px #00ff9d;
-    }
-    #dropZone {
-      border: 2px dashed #00ff9d;
-      border-radius: 12px;
-      padding: 20px;
-      width: 90%;
-      margin: 20px auto;
-      background: #1a1a1a;
-      color: #aaa;
-      transition: 0.3s;
-    }
-    #dropZone.dragover {
-      background: #222;
-      color: #00ff9d;
-      border-color: #00ff9d;
-    }
-    input[type="file"] {
-      margin-top: 10px;
-      color: #eee;
-    }
-    textarea {
-      width: 90%;
-      height: 200px;
-      margin: 20px auto;
-      display: block;
-      background: #1a1a1a;
-      color: #00ff9d;
-      border: 2px solid #333;
-      border-radius: 10px;
-      padding: 10px;
-      font-family: monospace;
-      resize: vertical;
-      box-shadow: 0 0 8px #00ff9d33;
-    }
-    button {
-      padding: 12px 20px;
-      margin: 10px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      background: #00ff9d;
-      color: #000;
-      font-weight: bold;
-      transition: 0.2s;
-      box-shadow: 0 0 12px #00ff9d55;
-    }
-    button:hover {
-      background: #00cc7a;
-      box-shadow: 0 0 18px #00ff9d;
-    }
-    footer {
-      margin-top: 20px;
-      padding: 10px;
-      font-size: 14px;
-      color: #777;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luau Obfuscator</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #0b1a2b;
+    color: #cce6ff;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+header {
+    background: #10375c;
+    padding: 20px;
+    font-size: 26px;
+    font-weight: bold;
+    color: #00d0ff;
+    text-shadow: 0 0 10px #00d0ff;
+}
+#dropZone {
+    border: 2px dashed #00d0ff;
+    border-radius: 12px;
+    padding: 20px;
+    width: 90%;
+    margin: 20px auto;
+    background: #0f2a45;
+    color: #aaa;
+    transition: 0.3s;
+}
+#dropZone.dragover {
+    background: #163c66;
+    color: #00d0ff;
+    border-color: #00d0ff;
+}
+input[type="file"] {
+    margin-top: 10px;
+    color: #eee;
+}
+textarea {
+    width: 90%;
+    height: 200px;
+    margin: 20px auto;
+    display: block;
+    background: #0f2a45;
+    color: #00d0ff;
+    border: 2px solid #163c66;
+    border-radius: 10px;
+    padding: 10px;
+    font-family: monospace;
+    resize: vertical;
+    box-shadow: 0 0 8px #00d0ff33;
+}
+button {
+    padding: 12px 20px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    background: #00d0ff;
+    color: #000;
+    font-weight: bold;
+    transition: 0.2s;
+    box-shadow: 0 0 12px #00d0ff55;
+}
+button:hover {
+    background: #00a3cc;
+    box-shadow: 0 0 18px #00d0ff;
+}
+footer {
+    margin-top: 20px;
+    padding: 10px;
+    font-size: 14px;
+    color: #77cfff;
+}
+</style>
 </head>
 <body>
-  <header>🔒 Luau Code Obfuscator</header>
+<header>🔹 Luau Obfuscator</header>
 
-  <!-- Drag & Drop / File Select Zone -->
-  <div id="dropZone">
-    <p>📂 Drag & Drop Luau file here or</p>
-    <input type="file" id="fileInput" accept=".lua,.luau,.txt">
-  </div>
+<div id="dropZone">
+  <p>📂 Drag & Drop Luau file here or</p>
+  <input type="file" id="fileInput" accept=".lua,.luau,.txt">
+</div>
 
-  <textarea id="inputCode" placeholder="Or paste your Luau code here..."></textarea>
-  <button onclick="obfuscateCode()">Obfuscate</button>
-  <button onclick="copyOutput()">Copy Output</button>
-  <textarea id="outputCode" placeholder="Obfuscated code will appear here..." readonly></textarea>
+<textarea id="inputCode" placeholder="Or paste your Luau code here..."></textarea>
+<button onclick="obfuscateCode()">Obfuscate</button>
+<button onclick="copyOutput()">Copy Output</button>
+<textarea id="outputCode" placeholder="Obfuscated code will appear here..." readonly></textarea>
 
-  <footer>Made for fun • Deploy on Netlify for free 🚀</footer>
+<footer>Made for fun • Deploy anywhere 🚀</footer>
 
-  <script>
-    // Simple variable name generator
-    function randomVar() {
-      let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      let name = "";
-      for (let i = 0; i < 8; i++) {
+<script>
+// Random variable generator
+function randomVar(len = 8) {
+    let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let name = "";
+    for (let i = 0; i < len; i++) {
         name += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return name;
     }
+    return name;
+}
 
-    // Simple string encoder
-    function encodeString(str) {
-      let encoded = "";
-      for (let i = 0; i < str.length; i++) {
-        encoded += "\\" + str.charCodeAt(i).toString(16);
-      }
-      return '"' + encoded + '"';
-    }
+// Encode string into hex
+function encodeString(str) {
+    return '"' + Array.from(str).map(c => "\\" + c.charCodeAt(0).toString(16)).join('') + '"';
+}
 
-    function obfuscateCode() {
-      let input = document.getElementById("inputCode").value;
-      if (!input.trim()) {
-        alert("Please paste some Luau code first!");
-        return;
-      }
+// Obfuscate code function
+function obfuscateCode() {
+    let input = document.getElementById("inputCode").value;
+    if (!input.trim()) { alert("Please paste some Luau code first!"); return; }
 
-      // Replace variable-like words
-      let varMap = {};
-      let obfuscated = input.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, function(match) {
-        if (["local","function","end","if","then","else","elseif","for","while","do","return","true","false","nil"].includes(match)) {
-          return match;
-        }
-        if (!varMap[match]) {
-          varMap[match] = randomVar();
-        }
-        return varMap[match];
-      });
+    let varMap = {};
+    let obf = input
+        .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, (match) => {
+            if (["local","function","end","if","then","else","elseif","for","while","do","return","true","false","nil"].includes(match)) return match;
+            if (!varMap[match]) varMap[match] = randomVar();
+            return varMap[match];
+        })
+        .replace(/"([^"]*)"/g, (_, str) => encodeString(str));
 
-      // Encode strings
-      obfuscated = obfuscated.replace(/"([^"]*)"/g, function(_, str) {
-        return encodeString(str);
-      });
+    // Minify to one line
+    obf = obf.replace(/\n/g, "").replace(/\s+/g, " ");
 
-      document.getElementById("outputCode").value = obfuscated;
-    }
+    document.getElementById("outputCode").value = obf;
+}
 
-    function copyOutput() {
-      let output = document.getElementById("outputCode");
-      output.select();
-      output.setSelectionRange(0, 99999);
-      document.execCommand("copy");
-      alert("Obfuscated code copied!");
-    }
+// Copy output
+function copyOutput() {
+    let output = document.getElementById("outputCode");
+    output.select();
+    output.setSelectionRange(0, 999999);
+    document.execCommand("copy");
+    alert("Obfuscated code copied!");
+}
 
-    // File input (PC + Mobile)
-    document.getElementById("fileInput").addEventListener("change", function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        document.getElementById("inputCode").value = ev.target.result;
-      };
-      reader.readAsText(file);
-    });
+// File input for PC/mobile
+document.getElementById("fileInput").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) { document.getElementById("inputCode").value = ev.target.result; };
+    reader.readAsText(file);
+});
 
-    // Drag & Drop
-    const dropZone = document.getElementById("dropZone");
-    dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropZone.classList.add("dragover");
-    });
-    dropZone.addEventListener("dragleave", () => {
-      dropZone.classList.remove("dragover");
-    });
-    dropZone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropZone.classList.remove("dragover");
-      const file = e.dataTransfer.files[0];
-      if (file) {
+// Drag & Drop
+const dropZone = document.getElementById("dropZone");
+dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+dropZone.addEventListener("dragleave", () => { dropZone.classList.remove("dragover"); });
+dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file) {
         const reader = new FileReader();
-        reader.onload = (ev) => {
-          document.getElementById("inputCode").value = ev.target.result;
-        };
+        reader.onload = (ev) => { document.getElementById("inputCode").value = ev.target.result; };
         reader.readAsText(file);
-      }
-    });
-  </script>
+    }
+});
+</script>
 </body>
 </html>
