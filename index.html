@@ -1,4 +1,4 @@
-<!DOCTYPE html>. 
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -13,24 +13,39 @@
       font-family: "Courier New", monospace;
       color: #80dfff;
       overflow: hidden;
-      animation: rainbow 10s linear infinite;
-      background-size: 400% 400%;
+      background: black;
     }
 
-    @keyframes rainbow {
-      0% { background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); }
-      50% { background: linear-gradient(135deg, #8f00ff, #0000ff, #00ff00, #ffff00, #ff7f00, #ff0000); }
-      100% { background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); }
+    /* Animated rainbow corners */
+    body::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(
+        red, orange, yellow, lime, cyan, blue, magenta, red
+      );
+      animation: spin 6s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .container {
-      background: rgba(0,0,0,0.8);
+      position: relative;
+      z-index: 1;
+      background: rgba(0,0,0,0.9);
       border-radius: 20px;
       padding: 20px;
       text-align: center;
       width: 90%;
       max-width: 800px;
-      box-shadow: 0 0 25px #80dfff;
+      box-shadow: 0 0 30px #80dfff;
     }
 
     h1 {
@@ -115,14 +130,9 @@
         return;
       }
 
-      // Add fake layers
       let obf = "--[[ Obfuscated by Diamond ]]\n\n";
-      for (let i = 0; i < 3; i++) {
-        obf += "-- Fake Layer " + (i+1) + "\n" +
-               "if false then " + randomName() + " = " + Math.floor(Math.random()*999999) + " end\n\n";
-      }
 
-      // Multi-layer encode (3 times for now)
+      // Multi-layer encode (3 layers default)
       let layered = code;
       for (let i = 0; i < 3; i++) {
         layered = encodeLayer(layered);
@@ -151,4 +161,4 @@
     }
   </script>
 </body>
-  </html>
+</html>
