@@ -83,6 +83,9 @@
           <label class="switch" title="Also compress whitespace in inner layers">
             <input type="checkbox" id="compactInner" checked> Compact Inner
           </label>
+          <label class="switch" title="Force execution even if a layer fails">
+            <input type="checkbox" id="safeModeChk" checked> Safe Mode
+          </label>
         </div>
 
         <div class="row" style="margin-top:8px;align-items:center">
@@ -111,11 +114,10 @@
         <div class="row" style="margin-top:10px">
           <button class="btn" id="copyBtn">Copy</button>
           <button class="btn" id="downloadBtn">Download</button>
-          <button class="btn secondary" id="verifyBtn" title="Quick local sanity check (won't run in Roblox here)">Verify Syntax</button>
         </div>
 
         <div style="margin-top:10px" class="small hint">
-          This creates layered number payloads + decoder. Keep critical runtime code (render loops) as minimal as possible to avoid performance impact.
+          Safe Mode ensures execution continues even if one decode layer errors, like IronBrew redundancy.
         </div>
       </div>
     </div>
@@ -124,7 +126,6 @@
   </div>
 
 <script>
-/* ---------- Utilities ---------- */
 function rndId(len=8){
   const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let s="";
@@ -149,33 +150,16 @@ function toBytesUtf8(str){
   return out;
 }
 function joinNums(arr){ return arr.join(","); }
-
-/* encode a string into an array of numbers by XOR key */
 function encodeNumbersFromString(str, key){
   const bytes = toBytesUtf8(str);
-  const out = bytes.map(b => (b ^ key) & 0xFF);
-  return out;
+  return bytes.map(b => (b ^ key) & 0xFF);
 }
-
-/* compress whitespace (optional) */
-function compactText(s){
-  return s.replace(/\s+/g," ").trim();
-}
-
-/* Build a layer that holds numeric array for given 'payloadStr' and key.
-   The payloadStr is a full Lua string (previous layer text), we encode it as numbers and create
-   a Luau snippet that decodes into that payload and returns it (or executes if inner-most).
-*/
+function compactText(s){ return s.replace(/\s+/g," ").trim(); }
 function buildLayerLua(payloadStr, key, opts){
-  // encode payloadStr into numbers (bytes)
   const nums = encodeNumbersFromString(payloadStr, key);
-  // chunking can be used for very long arrays, but we'll emit one table
   const tblName = rndId(6);
   const tmpName = rndId(6);
-  const outName = rndId(5);
   const sbits = joinNums(nums);
-  // Luau-safe decode code - uses bit32.bxor then string.char(table.unpack(...))
-  // We'll produce a function that returns the decoded string.
   let layer =
 `(function()
 local ${tblName} = {${sbits}}
@@ -187,164 +171,92 @@ end)()`;
   if (opts && opts.compact) layer = compactText(layer);
   return layer;
 }
-
-/* create a realistic junk function block (valid Luau) */
 function makeJunkBlock(){
   const fn = rndId(6);
   const a = Math.floor(Math.random()*4000)+100;
   const b = Math.floor(Math.random()*4000)+200;
   const c = Math.floor(Math.random()*100)+1;
-  // Avoid using ~ operator — use arithmetic and bit32 ops if needed
   return `do local ${fn} = ${a} + ${b}; ${fn} = bit32.bxor(${fn}, ${c}); end`;
 }
-
-/* Build the final multi-layered obfuscated Luau script.
-   layers: integer >=1
-   oneLine: boolean -> compress final output to one line
-   compactInner: boolean -> try to compact inner layer strings for smaller output
-*/
-function generateObfuscated(scriptText, layers=3, oneLine=false, compactInner=true){
-  // Start with payload being the raw script (we may add small junk prefixes)
-  // To make it more IronBrew-like, optionally add small harmless comment prefix (won't break)
-  const junkComment = `--[[JUNK:${Math.random().toString(36).slice(2,10)}]]\\n`;
+function generateObfuscated(scriptText, layers=3, oneLine=false, compactInner=true, safeMode=true){
+  const junkComment = `--[[JUNK:${Math.random().toString(36).slice(2,10)}]]\n`;
   let current = junkComment + scriptText;
-
-  // We'll perform LAYER encoding iteratively: each iteration encodes the *text* of the previous layer into numbers.
-  // For layer N: layerN = buildLayerLua(payload=current, key=keyN)
-  // After process, the final file will be code that decodes layerN -> string (which is Lua code that decodes layerN-1 -> ... -> original script)
-  const layerKeys = [];
-  const layerStrings = []; // store textual representation of each layer in order (for debugging if needed)
   for(let i=0;i<layers;i++){
-    const key = Math.floor(Math.random()*200)+11; // key != 0
-    layerKeys.push(key);
-    // create the encoded payload representing the *entire text* of the previous 'current'
-    const encodedLayer = buildLayerLua(current, key, {compact: compactInner});
-    // Now we want the next step to treat 'encodedLayer' as a string that will be executed to produce the previous content.
-    // However buildLayerLua returns a JS string representing "(function() ... return tmp end)()"
-    // For the next iteration we need the textual representation (Lua source) of encodedLayer as a string.
-    // So current = encodedLayer (which is Lua), and then next iteration encodes that Lua text.
-    current = encodedLayer;
-    layerStrings.push(current);
+    const key = Math.floor(Math.random()*200)+11;
+    current = buildLayerLua(current, key, {compact: compactInner});
   }
-
-  // After building layers, 'current' holds the outermost Lua text that evaluates to the previous (until inner-most)
-  // We now need to create a runner that executes decoding steps in Roblox Luau.
-  // But the approach used above produced layers where each layer is itself a Lua expression that returns the decoded inner text.
-  // So simplest final wrapper: assign the outermost expression to s, then iteratively loadstring and run.
-  // We'll build final output as one function that runs the sequence.
-
-  // To match IronBrew-style messy one-liner, we'll create a function that:
-  //  - defines a small helper to run loadstring if present
-  //  - assigns S0 = <outermost expression> (this returns inner-layer-lua text)
-  //  - then iteratively do loadstring(S0)() if loadstring returns a function, until we reach original
-  // But since our layer expressions already return strings, we can simply evaluate from outermost down by calling loadstring repeatedly.
-
-  // Build final runner Lua
   const helperName = rndId(6);
   const runFunName = rndId(6);
-  // We will place some junk blocks between declarations
-  let finalLuaLines = [];
-  finalLuaLines.push(`--[[obfed by Diamond obfuscator - ironbrew style]]`);
-  finalLuaLines.push(`(function()`); // start wrapper to avoid polluting global
-  // optional junk
-  for(let j=0;j<Math.min(3, layers); j++) finalLuaLines.push(makeJunkBlock());
-  // set outermost as s
-  finalLuaLines.push(`local ${helperName} = ${current}`); // current is a Lua expression returning string
-  // add loop to decode layers: call loadstring repeatedly layers times
-  finalLuaLines.push(`local function ${runFunName}(s)`);
-  finalLuaLines.push(`  local ok, f = pcall(loadstring, s)`);
-  finalLuaLines.push(`  if ok and type(f) == "function" then`);
-  finalLuaLines.push(`    local suc, res = pcall(f)`);
-  finalLuaLines.push(`    if suc then return res end`);
-  finalLuaLines.push(`  end`);
-  finalLuaLines.push(`  return nil`);
-  finalLuaLines.push(`end`);
-  // Now perform iterative unwrapping. Because each layer returns the inner Lua as a string,
-  // we need to call loadstring on the outermost string and evaluate to get the next string, and so on.
-  // We'll do a simple loop with a safety iteration cap equal to layers+2.
-  finalLuaLines.push(`local __s = ${helperName}`);
-  finalLuaLines.push(`for _i=1,${layers+2} do`);
-  finalLuaLines.push(`  local ok, f = pcall(loadstring, __s)`);
-  finalLuaLines.push(`  if not ok then break end`);
-  finalLuaLines.push(`  if type(f) ~= "function" then break end`);
-  finalLuaLines.push(`  local suc, res = pcall(f)`);
-  finalLuaLines.push(`  if not suc then break end`);
-  finalLuaLines.push(`  if type(res) == "string" then __s = res else break end`);
-  finalLuaLines.push(`end`);
-  // After unwrapping, __s should be the decoded original script string in most cases.
-  // Try executing it if it's loadable
-  finalLuaLines.push(`local ok2, f2 = pcall(loadstring, __s)`);
-  finalLuaLines.push(`if ok2 and type(f2) == "function" then pcall(f2) end`);
-  finalLuaLines.push(`end)()`); // end wrapper and call
-
-  let finalText = finalLuaLines.join("\n");
-
-  if(oneLine){
-    finalText = finalText.replace(/\s+/g," ").trim();
-  }
-  return finalText;
+  let finalLua = `
+--[[obfed by Diamond obfuscator - ironbrew style]]
+(function()
+  ${makeJunkBlock()}
+  local function ${runFunName}(s)
+    local ok,f = pcall(loadstring, s)
+    if ok and type(f)=="function" then
+      local suc,res = pcall(f)
+      if suc and type(res)=="string" then return res,true
+      elseif suc then return res,false end
+    end
+    return nil,false
+  end
+  local __s = ${current}
+  for _=1,${layers+3} do
+    local r,isStr = ${runFunName}(__s)
+    if not r then
+      ${safeMode ? "-- safe mode: continue anyway" : "break"}
+      if not ${safeMode} then break end
+    end
+    if isStr then
+      __s = r
+    else
+      if r then return end
+    end
+  end
+  local ok2,f2 = pcall(loadstring,__s)
+  if ok2 and type(f2)=="function" then pcall(f2) end
+end)()
+  `;
+  if(oneLine) finalLua = finalLua.replace(/\s+/g," ").trim();
+  return finalLua;
 }
 
-/* ---------- UI wiring ---------- */
-const inputArea = document.getElementById("inputArea");
-const outArea = document.getElementById("outArea");
-const obfBtn = document.getElementById("obfBtn");
-const copyBtn = document.getElementById("copyBtn");
-const dlBtn = document.getElementById("downloadBtn");
-const exampleBtn = document.getElementById("exampleBtn");
-
-obfBtn.addEventListener("click", ()=>{
-  const src = inputArea.value || "";
-  if(!src.trim()){ alert("Paste some Luau code first!"); return; }
-  const layers = parseInt(document.getElementById("layerCount").value,10) || 3;
-  const oneLine = document.getElementById("oneLineChk").checked;
-  const compactInner = document.getElementById("compactInner").checked;
-  // generate
+const inputArea=document.getElementById("inputArea");
+const outArea=document.getElementById("outArea");
+document.getElementById("obfBtn").addEventListener("click",()=>{
+  const src=inputArea.value||"";
+  if(!src.trim()){alert("Paste some Luau code first!");return;}
+  const layers=parseInt(document.getElementById("layerCount").value,10)||3;
+  const oneLine=document.getElementById("oneLineChk").checked;
+  const compactInner=document.getElementById("compactInner").checked;
+  const safeMode=document.getElementById("safeModeChk").checked;
   try{
-    const out = generateObfuscated(src, layers, oneLine, compactInner);
-    outArea.textContent = out;
+    const out=generateObfuscated(src,layers,oneLine,compactInner,safeMode);
+    outArea.textContent=out;
   }catch(e){
-    outArea.textContent = "-- error generating obfuscation: " + (e && e.message ? e.message : String(e));
+    outArea.textContent="-- error generating: "+e.message;
   }
 });
-
-exampleBtn.addEventListener("click", ()=>{
-  inputArea.value = `-- example script
+document.getElementById("exampleBtn").addEventListener("click",()=>{
+  inputArea.value=`-- example script
 for i=1,3 do
   print("diamond", i)
 end`;
 });
-
-copyBtn.addEventListener("click", ()=>{
-  if(!outArea.textContent) return alert("Nothing to copy");
-  navigator.clipboard.writeText(outArea.textContent).then(()=>{
-    alert("Copied to clipboard");
-  }, (err)=>{ alert("Copy failed: "+err); });
+document.getElementById("copyBtn").addEventListener("click",()=>{
+  if(!outArea.textContent)return alert("Nothing to copy");
+  navigator.clipboard.writeText(outArea.textContent).then(()=>alert("Copied!"));
 });
-
-dlBtn.addEventListener("click", ()=>{
-  if(!outArea.textContent) return alert("Nothing to download");
-  const name = `diamond_obf_${Date.now()}.lua`;
-  const blob = new Blob([outArea.textContent], {type:"text/plain"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
-});
-
-/* Quick sanity check: verify syntax by trying to parse loadstring on a simple inner decode result.
-   This only checks that the generated output contains loadstring calls and isn't completely invalid JS side.
-*/
-document.getElementById("verifyBtn").addEventListener("click", ()=>{
-  const s = outArea.textContent;
-  if(!s) return alert("No output to verify");
-  // Basic checks
-  if(!s.includes("loadstring") || !s.includes("bit32.bxor")) return alert("Output missing required primitives (loadstring/bit32.bxor) — likely invalid");
-  alert("Basic check passed: output contains loadstring and bit32.bxor. Final runtime verification must be done in Roblox environment.");
+document.getElementById("downloadBtn").addEventListener("click",()=>{
+  if(!outArea.textContent)return alert("Nothing to download");
+  const name=`diamond_obf_${Date.now()}.lua`;
+  const blob=new Blob([outArea.textContent],{type:"text/plain"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 });
 </script>
 </body>
-  </html>
+</html>
