@@ -1,213 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Diamond Luau Obfuscator</title>
+<title>Diamond Lua Upload + Key Generator</title>
 <style>
-body {
-    background:#071023;
-    color:#e6f7ff;
-    font-family:sans-serif;
-    margin:0;
-    padding:0;
-}
-.wrap {
-    max-width:900px;
-    margin:30px auto;
-    padding:20px;
-    background:#041226;
-    border-radius:12px;
-    box-shadow:0 0 20px rgba(0,0,0,0.5);
-}
-h1 {
-    text-align:center;
-    margin-bottom:20px;
-    font-size:1.6em;
-    color:#0b84d6;
-}
-textarea {
-    width:100%;
-    min-height:200px;
-    background:#021122;
-    color:#dff6ff;
-    border-radius:8px;
-    padding:10px;
-    font-family:monospace;
-    font-size:14px;
-    border:1px solid #0b84d6;
-}
-button {
-    margin:4px;
-    padding:8px 12px;
-    border:none;
-    border-radius:6px;
-    background:#0b84d6;
-    color:white;
-    cursor:pointer;
-    font-weight:600;
-    transition:0.2s;
-}
+body { background:#071023; color:#e6f7ff; font-family:sans-serif; margin:0; padding:0; }
+.wrap { max-width:900px; margin:30px auto; padding:20px; background:#041226; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.5); }
+h1 { text-align:center; margin-bottom:20px; font-size:1.6em; color:#0b84d6; }
+textarea { width:100%; min-height:200px; background:#021122; color:#dff6ff; border-radius:8px; padding:10px; font-family:monospace; font-size:14px; border:1px solid #0b84d6; }
+button { margin:4px; padding:8px 12px; border:none; border-radius:6px; background:#0b84d6; color:white; cursor:pointer; font-weight:600; transition:0.2s; }
 button:hover { background:#0964a2; }
-pre {
-    background:#021122;
-    padding:10px;
-    border-radius:8px;
-    max-height:400px;
-    overflow:auto;
-    border:1px solid #0b84d6;
-    white-space:pre-wrap;
-    word-break:break-word;
-}
-.row {
-    display:flex;
-    gap:10px;
-    align-items:center;
-    margin-top:10px;
-    flex-wrap:wrap;
-}
-label { user-select:none; }
-input[type=number] {
-    width:60px;
-    border-radius:6px;
-    border:1px solid #0b84d6;
-    background:#041226;
-    color:#dff6ff;
-    padding:2px 5px;
-}
+pre { background:#021122; padding:10px; border-radius:8px; max-height:400px; overflow:auto; border:1px solid #0b84d6; white-space:pre-wrap; word-break:break-word; }
+.row { display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Diamond Luau Obfuscator</h1>
-<textarea id="inputArea" placeholder="Paste your Luau code here..."></textarea>
+<h1>Upload Lua Script + Generate Key</h1>
+<textarea id="luaCode" placeholder="Paste your Lua code here..."></textarea>
 <div class="row">
-<button onclick="obfuscate()">Obfuscate</button>
-<label><input type="checkbox" id="oneLineChk"> One Liner</label>
-<label><input type="checkbox" id="compactChk"> Compact Inner Layers</label>
-<label>Layers: <input type="number" id="layerInput" value="3" min="1" max="10"></label>
-<button onclick="copyCode()">Copy</button>
-<button onclick="downloadCode()">Download .lua</button>
+<button onclick="uploadScript()">Upload & Generate Key</button>
 </div>
 <pre id="outputArea"></pre>
-</div>
-
-<script>
-const whitelist = ["print","warn","loadstring","error","pcall","typeof","tick"];
-
-function rndId(len=6){
-    const chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let s="";
-    for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+</div><script>
+function rndKey(len=12){
+    const chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let s=""; for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*chars.length)];
     return s;
 }
 
-function makeJunk(){
-    const fn=rndId(5),a=Math.floor(Math.random()*1000),b=Math.floor(Math.random()*1000),c=Math.floor(Math.random()*100);
-    return `do local ${fn}=${a}+${b};${fn}=${fn}^${c};end`;
+// Convert string to Lua obfuscated string.char
+function luaObfuscate(str){
+    return str.split('').map(c=>`string.char(${c.charCodeAt(0)})`).join('..');
 }
 
-function makeFakeFunc(){
-    const name=rndId(6),x=Math.floor(Math.random()*500),y=Math.floor(Math.random()*500);
-    return `local function ${name}()local n=${x}+${y} return n end`;
-}
+async function uploadScript(){
+    const code = document.getElementById("luaCode").value.trim();
+    if(!code) return alert("Enter Lua code to upload.");
 
-function encodeWord(word,key){
-    if(whitelist.includes(word)) return word;
-    return word.split('').map(c=>String.fromCharCode(c.charCodeAt(0)^key)).join('');
-}
+    // Generate random key
+    const key = rndKey();
 
-function encodeLayer(payload,key,compact=false){
-    const words=payload.split(/(\W)/);
-    const encodedWords=words.map(w=>encodeWord(w,key));
-    const joined=encodedWords.join('');
-    const t=rndId(5),tmp=rndId(5),tbl=rndId(5);
-    const tblContent=joined.split('').map(c=>c.charCodeAt(0)).join(',');
-    if(compact){
-        return `(function()local ${tbl}={${tblContent}};local ${tmp}="";for i=1,#${tbl}do ${tmp}=${tmp}..string.char(${tbl}[i])end;return ${tmp}end)()`;
-    }else{
-        return `(function()
-local ${tbl}={${tblContent}}
-for i=1,#${tbl} do ${tbl}[i]=bit32.bxor(${tbl}[i],${key}) end
-local ${tmp}=""
-for i=1,#${tbl} do ${tmp}=${tmp}..string.char(${tbl}[i]) end
-return ${tmp}
-end)()`;
+    // Upload to API
+    const apiURL = "https://your-glitch-api.glitch.me/upload"; // Change to your Glitch URL
+    try {
+        const res = await fetch(apiURL, {
+            method: "POST",
+            headers: {
+                "Content-Type":"application/json",
+                "Authorization": "Bearer " + key
+            },
+            body: JSON.stringify({ lua: code })
+        });
+        const text = await res.text();
+        if(!res.ok) return alert("Upload failed: "+text);
+
+        // Prepare Roblox Lua fetcher with obfuscated key
+        const obfKey = luaObfuscate(key);
+        const fetcher = `-- Roblox Lua Fetcher\nlocal HttpService=game:GetService("HttpService")\nlocal key=${obfKey}\nlocal url="https://your-glitch-api.glitch.me/fetch"\nlocal s,res=pcall(function() return HttpService:GetAsync(url.."?key="..key) end)\nif s then local f=loadstring(res) if type(f)=="function" then f() end end`;
+
+        document.getElementById("outputArea").textContent = `Upload Success!\n\nYour Key: ${key}\n\nRoblox Fetcher:\n${fetcher}`;
+
+    } catch(e){
+        alert("Error uploading: "+e);
     }
 }
-
-function obfuscate(){
-    let src=document.getElementById("inputArea").value;
-    const layers=parseInt(document.getElementById("layerInput").value)||3;
-    const oneLine=document.getElementById("oneLineChk").checked;
-    const compact=document.getElementById("compactChk").checked;
-
-    for(let i=0;i<layers;i++){
-        const key=Math.floor(Math.random()*200)+20;
-        src=encodeLayer(src,key,compact);
-        if(!compact) src=`(function()${makeJunk()};${makeFakeFunc()};return ${src}end)()`;
-    }
-
-    const runner=rndId(5), antiDebug=rndId(5), timeoutRunner=rndId(5);
-    let final=`--[[----Diamond Obfuscatotor -mix of every good obfuscators luau--]]
-(function()${makeJunk()}
--- Anti-debug
-local function ${antiDebug}()
-  if typeof(debug)=="table" and debug.getinfo then
-    error("Debug access detected")
-  end
-end
-${antiDebug}()
--- Timeout runner
-local function ${timeoutRunner}(s,timeout)
-  local ok,f=pcall(loadstring,s)
-  if ok and type(f)=="function" then
-    local success,res=pcall(f)
-    return res
-  end
-  return nil
-end
--- Main runner
-local function ${runner}(s)
-local ok,f=pcall(loadstring,s)
-if ok and type(f)=="function" then
-local suc,res=pcall(f)
-if type(res)=="string" then return res,true else return res,false end
-else error("Loadstring failed:"..tostring(f)) end
-end
-
-local __s=${src}
-for _=1,${layers+2} do
-local r,isStr=${runner}(__s)
-if not r then break end
-if isStr then __s=r else return end
-end
-
-local ok2,f2=pcall(loadstring,__s)
-if type(f2)=="function" then pcall(f2) end
-end)()`;
-
-    if(oneLine) final=final.replace(/[\n\r]+/g,' ').replace(/\s{2,}/g,' ');
-
-    document.getElementById("outputArea").textContent=final;
-}
-
-// Copy to clipboard
-function copyCode(){
-    const code=document.getElementById("outputArea").textContent;
-    navigator.clipboard.writeText(code);
-    alert("Obfuscated code copied to clipboard!");
-}
-
-// Download as .lua
-function downloadCode(){
-    const code=document.getElementById("outputArea").textContent;
-    const blob=new Blob([code],{type:"text/plain"});
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download="obfuscated.lua";
-    a.click();
-}
-</script>
-</body>
+</script></body>
 </html>
