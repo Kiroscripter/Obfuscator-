@@ -2,7 +2,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Diamond Lua Upload + Key Generator</title>
+<title>Diamond Luau Obfuscator </title>
 <style>
 body { background:#071023; color:#e6f7ff; font-family:sans-serif; margin:0; padding:0; }
 .wrap { max-width:900px; margin:30px auto; padding:20px; background:#041226; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.5); }
@@ -16,7 +16,7 @@ pre { background:#021122; padding:10px; border-radius:8px; max-height:400px; ove
 </head>
 <body>
 <div class="wrap">
-<h1>Upload Lua Script + Generate Key</h1>
+<h1>Obfuscate your script</h1>
 <textarea id="luaCode" placeholder="Paste your Lua code here..."></textarea>
 <div class="row">
 <button onclick="uploadScript()">Upload & Generate Key</button>
@@ -42,7 +42,7 @@ async function uploadScript(){
     const key = rndKey();
 
     // Upload to API
-    const apiURL = "https://your-glitch-api.glitch.me/upload"; // Change to your Glitch URL
+    const apiURL = "https://obfuscation-api-0qvo.onrender.com/";
     try {
         const res = await fetch(apiURL, {
             method: "POST",
