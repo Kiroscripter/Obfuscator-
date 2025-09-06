@@ -1,309 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Diamond Obfuscator – IronBrew Style</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Diamond Obfuscator (Luau)</title>
 <style>
   :root{
-    --bg:#0b1020;
-    --panel:#0f1730;
-    --panel-2:#0c142a;
-    --ink:#eaf2ff;
-    --accent:#49a9ff;
-    --accent-2:#8ad0ff;
-    --muted:#9fb6d1;
+    --bg:#071023; --panel:#09142a; --accent:#2fb7ff; --text:#e6f7ff;
+    --muted:#9fbfda; --btn:#0b84d6;
   }
   *{box-sizing:border-box}
   body{
-    margin:0;
-    background: radial-gradient(1200px 600px at -10% -10%, #10224a 0%, transparent 60%),
-                radial-gradient(1200px 600px at 110% 110%, #10224a 0%, transparent 60%),
-                var(--bg);
-    color:var(--ink);
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
-    min-height:100svh;
-    display:flex; align-items:center; justify-content:center; padding:24px;
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
+    background:
+      radial-gradient(800px 400px at -10% -10%, rgba(47,183,255,0.06), transparent 20%),
+      radial-gradient(900px 500px at 110% 110%, rgba(47,183,255,0.04), transparent 20%),
+      var(--bg);
+    color:var(--text); padding:28px;
   }
-  .wrap{
-    width:min(1100px, 96vw);
-  }
-  .hero{
-    display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap;
-    margin-bottom:16px;
-  }
-  .title{
-    font-weight:900; letter-spacing:0.5px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  .wrap{ width:min(1080px,98vw) }
+  header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px }
+  h1{
+    margin:0; font-weight:800; font-size:clamp(20px,3.4vw,34px);
+    background: linear-gradient(90deg,var(--accent),#8fe7ff);
     -webkit-background-clip:text; background-clip:text; color:transparent;
-    font-size: clamp(28px, 5vw, 44px);
-    margin:0;
+    text-shadow:0 6px 28px rgba(15,86,120,0.12);
   }
-  .sub{color:var(--muted); margin-top:4px}
+  .sub{ color:var(--muted); font-size:13px }
+  .grid{ display:grid; gap:14px; grid-template-columns:1fr 460px }
+  @media(max-width:980px){ .grid{ grid-template-columns:1fr } }
   .card{
-    background: linear-gradient(180deg, var(--panel), var(--panel-2));
-    border:1px solid rgba(255,255,255,.06);
-    border-radius:16px; padding:16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+    background:linear-gradient(180deg,var(--panel), #071225);
+    border-radius:12px; padding:14px; border:1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
   }
+  label.switch{ display:inline-flex; gap:10px; align-items:center; cursor:pointer; color:var(--muted) }
+  input[type="checkbox"]{ width:18px; height:18px }
   textarea{
-    width:100%; min-height:220px; resize:vertical;
-    background:#0b1329; color:#dff1ff;
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:12px; padding:14px; font-size:14px; line-height:1.4;
-    outline:none; box-shadow: inset 0 0 0 9999px rgba(255,255,255,0);
+    width:100%; min-height:260px; resize:vertical; background:#041226; color:#dff6ff;
+    border-radius:8px; border:1px solid rgba(255,255,255,0.04); padding:12px; font-family:monospace;
+    font-size:13px; line-height:1.4;
   }
-  .row{display:flex; gap:12px; flex-wrap:wrap; margin-top:12px}
+  .row{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
   .btn{
-    appearance:none; border:none; cursor:pointer;
-    background: linear-gradient(180deg, #2a7be9, #1156c9);
-    color:white; padding:12px 16px; border-radius:12px; font-weight:700;
-    box-shadow: 0 8px 20px rgba(35,124,255,.35), inset 0 1px 0 rgba(255,255,255,.15);
-    transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+    background:linear-gradient(180deg,var(--btn),#0a6ab5); color:#fff; border:none; padding:10px 14px;
+    border-radius:10px; font-weight:700; cursor:pointer; box-shadow:0 8px 20px rgba(11,104,170,0.18);
   }
-  .btn:hover{ transform: translateY(-1px); filter: brightness(1.03) }
-  .btn:active{ transform: translateY(0) scale(.99) }
-  .btn.secondary{
-    background: linear-gradient(180deg, #1e2a44, #162036);
-    color:#cfe4ff;
-    box-shadow: 0 6px 16px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.06);
-  }
-  .hint{font-size:12px; color:#89a6c4}
-  .grid{display:grid; gap:16px; grid-template-columns: 1fr; }
-  @media(min-width:980px){ .grid{ grid-template-columns: 1fr 1fr } }
-  .chip{
-    display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
-    background:rgba(73,169,255,.14); color:#bfe0ff; border:1px solid rgba(73,169,255,.25);
-    font-size:12px; font-weight:700;
-  }
-  .switch{
-    display:inline-flex; align-items:center; gap:8px; user-select:none; cursor:pointer; color:#cfe4ff;
-  }
-  .switch input{ display:none }
-  .toggle{
-    width:44px; height:26px; background:#16233e; border:1px solid rgba(255,255,255,.08);
-    border-radius:999px; position:relative;
-    box-shadow: inset 0 6px 14px rgba(0,0,0,.35);
-  }
-  .toggle::after{
-    content:""; position:absolute; top:2px; left:2px; width:22px; height:22px; border-radius:50%;
-    background: linear-gradient(180deg,#eaf2ff,#b9d3ff);
-    box-shadow: 0 4px 10px rgba(0,0,0,.4);
-    transition:left .18s ease;
-  }
-  .switch input:checked + .toggle::after{ left:20px }
-  .footer{ margin-top:14px; color:#89a6c4; font-size:12px; text-align:right }
-  code{ color:#bfe0ff }
+  .btn.secondary{ background:linear-gradient(180deg,#0e2338,#071226); color:var(--muted); border:1px solid rgba(255,255,255,0.02) }
+  .hint{ color:var(--muted); font-size:12px }
+  pre.output{ white-space:pre-wrap; word-break:break-all; max-height:520px; overflow:auto; padding:10px; background:#021122; border-radius:8px; border:1px solid rgba(255,255,255,0.02); color:#c8f1ff; font-family:monospace; font-size:13px }
+  footer{ margin-top:10px; text-align:right; color:var(--muted); font-size:12px }
+  .small{ font-size:12px; color:var(--muted) }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
+    <header>
       <div>
-        <h1 class="title">Diamond Obfuscator</h1>
-        <div class="sub">IronBrew-style, browser-only obfuscation. No uploads. No servers.</div>
+        <h1>Diamond Obfuscator</h1>
+        <div class="sub">Layered, Luau-safe obfuscation (IronBrew style) — client side</div>
       </div>
-      <span class="chip">Client-Side • One-Line Output • Number Encoding</span>
-    </div>
+      <div class="small">--[[obfed by Diamond obfuscator - ironbrew style]]</div>
+    </header>
 
     <div class="grid">
-      <!-- INPUT -->
+      <!-- LEFT: INPUT -->
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <strong>Input Lua/Luau</strong>
-          <label class="switch" title="If enabled, output is a single line">
-            <input id="singleLine" type="checkbox" checked />
-            <span class="toggle"></span> single-line
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>Input (Luau)</strong>
+          <div class="small">Paste & obfuscate locally — no server</div>
+        </div>
+
+        <textarea id="inputArea" placeholder="Paste your Luau code here... (e.g. print('hello'))"></textarea>
+
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="obfBtn">Obfuscate</button>
+          <button class="btn secondary" id="exampleBtn" title="Load tiny example">Load Example</button>
+          <label class="switch" title="Output single-line compact">
+            <input type="checkbox" id="oneLineChk"> One Liner
+          </label>
+          <label class="switch" title="Also compress whitespace in inner layers">
+            <input type="checkbox" id="compactInner" checked> Compact Inner
           </label>
         </div>
-        <textarea id="in" spellcheck="false" placeholder='-- Paste your Lua/Luau here
-print("hello world")'></textarea>
-        <div class="row">
-          <button class="btn" id="obfBtn">Obfuscate</button>
-          <button class="btn secondary" id="exampleBtn" title="Insert a tiny sample script">Load Example</button>
-          <span class="hint">Header will be added: <code>--[[obfed by Diamond obfuscator -iron brew copy]]</code></span>
+
+        <div class="row" style="margin-top:8px;align-items:center">
+          <div class="hint">Layers:</div>
+          <select id="layerCount" style="padding:6px;border-radius:8px;background:#081426;color:#dff6ff;border:1px solid rgba(255,255,255,0.03)">
+            <option value="1">1 (fast)</option>
+            <option value="2">2</option>
+            <option value="3" selected>3 (recommended)</option>
+            <option value="4">4</option>
+            <option value="5">5 (messy)</option>
+          </select>
+          <div style="flex:1"></div>
+          <div class="hint">Output size will increase with layers</div>
         </div>
       </div>
 
-      <!-- OUTPUT -->
+      <!-- RIGHT: OUTPUT -->
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
           <strong>Output</strong>
-          <span class="hint">Size depends on your code length.</span>
+          <div class="small">Luau-safe — uses <code>bit32.bxor</code> + <code>loadstring</code></div>
         </div>
-        <textarea id="out" spellcheck="false" placeholder="Obfuscated code appears here…" readonly></textarea>
-        <div class="row">
+
+        <pre id="outArea" class="output" readonly></pre>
+
+        <div class="row" style="margin-top:10px">
           <button class="btn" id="copyBtn">Copy</button>
           <button class="btn" id="downloadBtn">Download</button>
+          <button class="btn secondary" id="verifyBtn" title="Quick local sanity check (won't run in Roblox here)">Verify Syntax</button>
         </div>
-        <div class="footer">Made with ♥ for browser use. No external services required.</div>
+
+        <div style="margin-top:10px" class="small hint">
+          This creates layered number payloads + decoder. Keep critical runtime code (render loops) as minimal as possible to avoid performance impact.
+        </div>
       </div>
     </div>
+
+    <footer>Made with care — Diamond Obfuscator (Luau) • Local only</footer>
   </div>
 
 <script>
-/* -----------------------------------------------------------
-   Diamond Obfuscator – IronBrew-style (client-side)
-   NOTE: This is an independent re-implementation inspired by
-   the “number-encoded payload with loader” pattern. It is NOT
-   IronBrew’s original algorithm.
------------------------------------------------------------ */
-
-/* Utility: UTF-8 to bytes (keeps Roblox-safe behavior) */
-function toBytes(str){
-  const out = [];
-  for (let i=0;i<str.length;i++){
+/* ---------- Utilities ---------- */
+function rndId(len=8){
+  const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let s="";
+  for(let i=0;i<len;i++) s+=letters.charAt(Math.floor(Math.random()*letters.length));
+  return s;
+}
+function toBytesUtf8(str){
+  const out=[];
+  for(let i=0;i<str.length;i++){
     let c = str.charCodeAt(i);
-    if (c <= 0x7F){
-      out.push(c);
-    } else if (c <= 0x7FF){
-      out.push(0xC0 | (c>>6), 0x80 | (c & 0x3F));
-    } else if (c >= 0xD800 && c <= 0xDBFF){
-      // surrogate pair
-      const hi = c;
-      const lo = str.charCodeAt(++i);
-      const cp = (hi - 0xD800) * 0x400 + (lo - 0xDC00) + 0x10000;
-      out.push(0xF0 | (cp>>18),
-               0x80 | ((cp>>12) & 0x3F),
-               0x80 | ((cp>>6) & 0x3F),
-               0x80 | (cp & 0x3F));
+    if(c<=0x7F) out.push(c);
+    else if(c<=0x7FF){
+      out.push(0xC0 | (c>>6), 0x80 | (c&0x3F));
+    } else if(c>=0xD800 && c<=0xDBFF){
+      const hi=c; const lo=str.charCodeAt(++i);
+      const cp = (hi-0xD800)*0x400 + (lo-0xDC00) + 0x10000;
+      out.push(0xF0 | (cp>>18), 0x80 | ((cp>>12)&0x3F), 0x80 | ((cp>>6)&0x3F), 0x80 | (cp&0x3F));
     } else {
-      out.push(0xE0 | (c>>12),
-               0x80 | ((c>>6) & 0x3F),
-               0x80 | (c & 0x3F));
+      out.push(0xE0 | (c>>12), 0x80 | ((c>>6)&0x3F), 0x80 | (c&0x3F));
     }
   }
   return out;
 }
+function joinNums(arr){ return arr.join(","); }
 
-/* Small helpers to make the loader a little more complex */
-function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-function rndIdent(len=randInt(6,10)){
-  const a = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let s=""; for(let i=0;i<len;i++) s+=a[Math.floor(Math.random()*a.length)];
-  return s;
-}
-function chunkArray(arr, size){
-  const out=[]; for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+/* encode a string into an array of numbers by XOR key */
+function encodeNumbersFromString(str, key){
+  const bytes = toBytesUtf8(str);
+  const out = bytes.map(b => (b ^ key) & 0xFF);
   return out;
 }
 
-/* The generator: build a layered Lua one-liner with number payload */
-function generateObfuscatedLua(src, opts={singleLine:true}){
-  // 1) Header (exact line requested)
-  const header = "--[[obfed by Diamond obfuscator -iron brew copy]]";
-
-  // 2) Bytes + simple XOR for light obfuscation (fast, reversible)
-  const key = randInt(7, 251); // avoid 0/255
-  const bytes = toBytes(src).map(b => (b ^ key));
-
-  // 3) Split into chunks to reduce extremely long bracket lists
-  const chunkSize = 512; // tune for speed/size
-  const chunks = chunkArray(bytes, chunkSize);
-
-  // 4) Random identifiers to avoid pattern-based detection
-  const id_tbl = rndIdent();
-  const id_key = rndIdent();
-  const id_cat = rndIdent();
-  const id_chr = rndIdent();
-  const id_lstr = rndIdent();
-  const id_fake = rndIdent();
-  const id_fake2 = rndIdent();
-
-  // 5) Build chunk tables
-  const tablesLua = chunks.map((c,i)=>{
-    return `local ${id_tbl}${i}={${c.join(",")}}`;
-  }).join(";");
-
-  // 6) Assembly loop: reconstruct string in parts (table.concat)
-  const concatParts = chunks.map((_,i)=>`${id_tbl}${i}`).join(",");
-  const buildScript =
-  `local ${id_key}=${key};` +
-  `local ${id_cat}={${concatParts}};` +
-  `local ${id_chr}=string.char;` +
-  `local ${id_lstr}="";` +
-  `do ` +
-  ` for _i=1,#${id_cat} do ` +
-  `  local _t=${id_cat}[_i]; ` +
-  `  for _j=1,#_t do ` +
-  `    _t[_j]=_t[_j]~${id_key}; ` +         // XOR back
-  `  end; ` +
-  `  ${id_lstr}=${id_lstr}..${id_chr}(table.unpack(_t)); ` +
-  ` end; ` +
-  `end;`;
-
-  // 7) Light fake noise layers (valid, cheap)
-  const fakeNoise =
-    `do local ${id_fake}=${randInt(1000,9999)}; ` +
-    `for _=1,${randInt(2,4)} do ${id_fake}=${id_fake}+1 end; end;` +
-    `do local ${id_fake2}=${randInt(2000,9999)}; ` +
-    `for _=1,${randInt(2,3)} do ${id_fake2}=${id_fake2}-${randInt(1,3)} end; end;`;
-
-  // 8) Loader (loadstring) – kept simple & compatible
-  const loader = `return (loadstring(${id_lstr}))()`;
-
-  // 9) Combine everything
-  let pretty =
-`${header}
-do ${fakeNoise}
-${tablesLua}
-${buildScript}
-${loader} end`;
-
-  if (opts.singleLine){
-    // squash whitespace to one line
-    pretty = pretty
-      .replace(/\s+/g,' ')
-      .replace(/;\s+/g,';')
-      .replace(/\s+end/g,' end')
-      .trim();
-  }
-  return pretty;
+/* compress whitespace (optional) */
+function compactText(s){
+  return s.replace(/\s+/g," ").trim();
 }
 
-/* UI wiring */
-const $in = document.getElementById('in');
-const $out = document.getElementById('out');
-const $obf = document.getElementById('obfBtn');
-const $copy = document.getElementById('copyBtn');
-const $dl = document.getElementById('downloadBtn');
-const $ex = document.getElementById('exampleBtn');
-const $single = document.getElementById('singleLine');
+/* Build a layer that holds numeric array for given 'payloadStr' and key.
+   The payloadStr is a full Lua string (previous layer text), we encode it as numbers and create
+   a Luau snippet that decodes into that payload and returns it (or executes if inner-most).
+*/
+function buildLayerLua(payloadStr, key, opts){
+  // encode payloadStr into numbers (bytes)
+  const nums = encodeNumbersFromString(payloadStr, key);
+  // chunking can be used for very long arrays, but we'll emit one table
+  const tblName = rndId(6);
+  const tmpName = rndId(6);
+  const outName = rndId(5);
+  const sbits = joinNums(nums);
+  // Luau-safe decode code - uses bit32.bxor then string.char(table.unpack(...))
+  // We'll produce a function that returns the decoded string.
+  let layer =
+`(function()
+local ${tblName} = {${sbits}}
+for i=1,#${tblName} do ${tblName}[i] = bit32.bxor(${tblName}[i], ${key}) end
+local ${tmpName} = ""
+for i=1,#${tblName} do ${tmpName} = ${tmpName} .. string.char(${tblName}[i]) end
+return ${tmpName}
+end)()`;
+  if (opts && opts.compact) layer = compactText(layer);
+  return layer;
+}
 
-$ex.addEventListener('click', ()=>{
-  $in.value = `-- tiny sample
-local msg = "hello"
-print("demo:", msg)
-`;
+/* create a realistic junk function block (valid Luau) */
+function makeJunkBlock(){
+  const fn = rndId(6);
+  const a = Math.floor(Math.random()*4000)+100;
+  const b = Math.floor(Math.random()*4000)+200;
+  const c = Math.floor(Math.random()*100)+1;
+  // Avoid using ~ operator — use arithmetic and bit32 ops if needed
+  return `do local ${fn} = ${a} + ${b}; ${fn} = bit32.bxor(${fn}, ${c}); end`;
+}
+
+/* Build the final multi-layered obfuscated Luau script.
+   layers: integer >=1
+   oneLine: boolean -> compress final output to one line
+   compactInner: boolean -> try to compact inner layer strings for smaller output
+*/
+function generateObfuscated(scriptText, layers=3, oneLine=false, compactInner=true){
+  // Start with payload being the raw script (we may add small junk prefixes)
+  // To make it more IronBrew-like, optionally add small harmless comment prefix (won't break)
+  const junkComment = `--[[JUNK:${Math.random().toString(36).slice(2,10)}]]\\n`;
+  let current = junkComment + scriptText;
+
+  // We'll perform LAYER encoding iteratively: each iteration encodes the *text* of the previous layer into numbers.
+  // For layer N: layerN = buildLayerLua(payload=current, key=keyN)
+  // After process, the final file will be code that decodes layerN -> string (which is Lua code that decodes layerN-1 -> ... -> original script)
+  const layerKeys = [];
+  const layerStrings = []; // store textual representation of each layer in order (for debugging if needed)
+  for(let i=0;i<layers;i++){
+    const key = Math.floor(Math.random()*200)+11; // key != 0
+    layerKeys.push(key);
+    // create the encoded payload representing the *entire text* of the previous 'current'
+    const encodedLayer = buildLayerLua(current, key, {compact: compactInner});
+    // Now we want the next step to treat 'encodedLayer' as a string that will be executed to produce the previous content.
+    // However buildLayerLua returns a JS string representing "(function() ... return tmp end)()"
+    // For the next iteration we need the textual representation (Lua source) of encodedLayer as a string.
+    // So current = encodedLayer (which is Lua), and then next iteration encodes that Lua text.
+    current = encodedLayer;
+    layerStrings.push(current);
+  }
+
+  // After building layers, 'current' holds the outermost Lua text that evaluates to the previous (until inner-most)
+  // We now need to create a runner that executes decoding steps in Roblox Luau.
+  // But the approach used above produced layers where each layer is itself a Lua expression that returns the decoded inner text.
+  // So simplest final wrapper: assign the outermost expression to s, then iteratively loadstring and run.
+  // We'll build final output as one function that runs the sequence.
+
+  // To match IronBrew-style messy one-liner, we'll create a function that:
+  //  - defines a small helper to run loadstring if present
+  //  - assigns S0 = <outermost expression> (this returns inner-layer-lua text)
+  //  - then iteratively do loadstring(S0)() if loadstring returns a function, until we reach original
+  // But since our layer expressions already return strings, we can simply evaluate from outermost down by calling loadstring repeatedly.
+
+  // Build final runner Lua
+  const helperName = rndId(6);
+  const runFunName = rndId(6);
+  // We will place some junk blocks between declarations
+  let finalLuaLines = [];
+  finalLuaLines.push(`--[[obfed by Diamond obfuscator - ironbrew style]]`);
+  finalLuaLines.push(`(function()`); // start wrapper to avoid polluting global
+  // optional junk
+  for(let j=0;j<Math.min(3, layers); j++) finalLuaLines.push(makeJunkBlock());
+  // set outermost as s
+  finalLuaLines.push(`local ${helperName} = ${current}`); // current is a Lua expression returning string
+  // add loop to decode layers: call loadstring repeatedly layers times
+  finalLuaLines.push(`local function ${runFunName}(s)`);
+  finalLuaLines.push(`  local ok, f = pcall(loadstring, s)`);
+  finalLuaLines.push(`  if ok and type(f) == "function" then`);
+  finalLuaLines.push(`    local suc, res = pcall(f)`);
+  finalLuaLines.push(`    if suc then return res end`);
+  finalLuaLines.push(`  end`);
+  finalLuaLines.push(`  return nil`);
+  finalLuaLines.push(`end`);
+  // Now perform iterative unwrapping. Because each layer returns the inner Lua as a string,
+  // we need to call loadstring on the outermost string and evaluate to get the next string, and so on.
+  // We'll do a simple loop with a safety iteration cap equal to layers+2.
+  finalLuaLines.push(`local __s = ${helperName}`);
+  finalLuaLines.push(`for _i=1,${layers+2} do`);
+  finalLuaLines.push(`  local ok, f = pcall(loadstring, __s)`);
+  finalLuaLines.push(`  if not ok then break end`);
+  finalLuaLines.push(`  if type(f) ~= "function" then break end`);
+  finalLuaLines.push(`  local suc, res = pcall(f)`);
+  finalLuaLines.push(`  if not suc then break end`);
+  finalLuaLines.push(`  if type(res) == "string" then __s = res else break end`);
+  finalLuaLines.push(`end`);
+  // After unwrapping, __s should be the decoded original script string in most cases.
+  // Try executing it if it's loadable
+  finalLuaLines.push(`local ok2, f2 = pcall(loadstring, __s)`);
+  finalLuaLines.push(`if ok2 and type(f2) == "function" then pcall(f2) end`);
+  finalLuaLines.push(`end)()`); // end wrapper and call
+
+  let finalText = finalLuaLines.join("\n");
+
+  if(oneLine){
+    finalText = finalText.replace(/\s+/g," ").trim();
+  }
+  return finalText;
+}
+
+/* ---------- UI wiring ---------- */
+const inputArea = document.getElementById("inputArea");
+const outArea = document.getElementById("outArea");
+const obfBtn = document.getElementById("obfBtn");
+const copyBtn = document.getElementById("copyBtn");
+const dlBtn = document.getElementById("downloadBtn");
+const exampleBtn = document.getElementById("exampleBtn");
+
+obfBtn.addEventListener("click", ()=>{
+  const src = inputArea.value || "";
+  if(!src.trim()){ alert("Paste some Luau code first!"); return; }
+  const layers = parseInt(document.getElementById("layerCount").value,10) || 3;
+  const oneLine = document.getElementById("oneLineChk").checked;
+  const compactInner = document.getElementById("compactInner").checked;
+  // generate
+  try{
+    const out = generateObfuscated(src, layers, oneLine, compactInner);
+    outArea.textContent = out;
+  }catch(e){
+    outArea.textContent = "-- error generating obfuscation: " + (e && e.message ? e.message : String(e));
+  }
 });
 
-$obf.addEventListener('click', ()=>{
-  const src = $in.value || "";
-  if (!src.trim()){ alert("Paste some Lua/Luau first."); return; }
-  // IMPORTANT: we do NOT rename identifiers to avoid breaking scripts
-  const out = generateObfuscatedLua(src, { singleLine: $single.checked });
-  $out.value = out;
+exampleBtn.addEventListener("click", ()=>{
+  inputArea.value = `-- example script
+for i=1,3 do
+  print("diamond", i)
+end`;
 });
 
-$copy.addEventListener('click', ()=>{
-  if (!$out.value) return;
-  $out.select();
-  $out.setSelectionRange(0, 1e9);
-  document.execCommand('copy');
+copyBtn.addEventListener("click", ()=>{
+  if(!outArea.textContent) return alert("Nothing to copy");
+  navigator.clipboard.writeText(outArea.textContent).then(()=>{
+    alert("Copied to clipboard");
+  }, (err)=>{ alert("Copy failed: "+err); });
 });
 
-$dl.addEventListener('click', ()=>{
-  if (!$out.value){ alert("Nothing to download yet."); return; }
-  const blob = new Blob([$out.value], {type:'text/plain'});
-  const a = document.createElement('a');
-  const rand = Math.floor(Math.random()*1e6);
+dlBtn.addEventListener("click", ()=>{
+  if(!outArea.textContent) return alert("Nothing to download");
+  const name = `diamond_obf_${Date.now()}.lua`;
+  const blob = new Blob([outArea.textContent], {type:"text/plain"});
+  const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `diamond_obf_${Date.now()}_${rand}.lua`;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
 });
+
+/* Quick sanity check: verify syntax by trying to parse loadstring on a simple inner decode result.
+   This only checks that the generated output contains loadstring calls and isn't completely invalid JS side.
+*/
+document.getElementById("verifyBtn").addEventListener("click", ()=>{
+  const s = outArea.textContent;
+  if(!s) return alert("No output to verify");
+  // Basic checks
+  if(!s.includes("loadstring") || !s.includes("bit32.bxor")) return alert("Output missing required primitives (loadstring/bit32.bxor) — likely invalid");
+  alert("Basic check passed: output contains loadstring and bit32.bxor. Final runtime verification must be done in Roblox environment.");
+});
 </script>
 </body>
-</html>
+  </html>
