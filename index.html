@@ -1,8 +1,9 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Diamond Luau Obfuscator </title>
+<title>Diamond Luau Obfuscator</title>
 <style>
 body { background:#071023; color:#e6f7ff; font-family:sans-serif; margin:0; padding:0; }
 .wrap { max-width:900px; margin:30px auto; padding:20px; background:#041226; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.5); }
@@ -22,7 +23,8 @@ pre { background:#021122; padding:10px; border-radius:8px; max-height:400px; ove
 <button onclick="uploadScript()">Upload & Generate Key</button>
 </div>
 <pre id="outputArea"></pre>
-</div><script>
+</div>
+<script>
 function rndKey(len=12){
     const chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let s=""; for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*chars.length)];
@@ -42,7 +44,7 @@ async function uploadScript(){
     const key = rndKey();
 
     // Upload to API
-    const apiURL = "https://obfuscation-api-0qvo.onrender.com/";
+    const apiURL = "https://obfuscation-api-0qvo.onrender.com/upload";
     try {
         const res = await fetch(apiURL, {
             method: "POST",
@@ -57,7 +59,12 @@ async function uploadScript(){
 
         // Prepare Roblox Lua fetcher with obfuscated key
         const obfKey = luaObfuscate(key);
-        const fetcher = `-- Roblox Lua Fetcher\nlocal HttpService=game:GetService("HttpService")\nlocal key=${obfKey}\nlocal url="https://your-glitch-api.glitch.me/fetch"\nlocal s,res=pcall(function() return HttpService:GetAsync(url.."?key="..key) end)\nif s then local f=loadstring(res) if type(f)=="function" then f() end end`;
+        const fetcher = `-- Roblox Lua Fetcher
+local HttpService=game:GetService("HttpService")
+local key=${obfKey}
+local url="https://obfuscation-api-0qvo.onrender.com/fetch"
+local s,res=pcall(function() return HttpService:GetAsync(url.."?key="..key) end)
+if s then local f=loadstring(res) if type(f)=="function" then f() end end`;
 
         document.getElementById("outputArea").textContent = `Upload Success!\n\nYour Key: ${key}\n\nRoblox Fetcher:\n${fetcher}`;
 
@@ -65,5 +72,6 @@ async function uploadScript(){
         alert("Error uploading: "+e);
     }
 }
-</script></body>
+</script>
+</body>
 </html>
