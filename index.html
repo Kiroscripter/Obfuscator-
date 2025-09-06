@@ -1,113 +1,124 @@
-<!DOCTYPE html>    
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Diamond Luau Obfuscator</title>
-<style>
-body { background:#071023; color:#e6f7ff; font-family:sans-serif; margin:0; padding:0; }
-.wrap { max-width:900px; margin:20px auto; padding:15px; background:#041226; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.5); }
-h1 { text-align:center; margin-bottom:20px; font-size:1.6em; color:#0b84d6; }
-textarea { width:100%; min-height:200px; background:#021122; color:#dff6ff; border-radius:8px; padding:10px; font-family:monospace; font-size:14px; border:1px solid #0b84d6; resize: vertical; }
-button { margin:4px; padding:12px 16px; border:none; border-radius:8px; background:#0b84d6; color:white; cursor:pointer; font-weight:600; transition:0.2s; flex:1; min-width:100px; }
-button:hover { background:#0964a2; }
-pre { background:#021122; padding:10px; border-radius:8px; max-height:400px; overflow:auto; border:1px solid #0b84d6; white-space:pre-wrap; word-break:break-word; margin-top:10px; }
-.row { display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
-input[type=file] { color:#dff6ff; flex:1; min-width:100px; }
-@media(max-width:600px){
-  .row { flex-direction:column; }
-  button, input[type=file] { width:100%; }
-}
-</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Diamond Luau Obfuscator</title>
+  <style>
+    body { background: #071023; color: #e6f7ff; font-family: sans-serif; margin: 0; padding: 0; }
+    .wrap { max-width: 900px; margin: 30px auto; padding: 20px; background: #041226; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    h1 { text-align: center; margin-bottom: 20px; font-size: 1.6em; color: #0b84d6; }
+    textarea { width: 100%; min-height: 200px; background: #021122; color: #dff6ff; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 14px; border: 1px solid #0b84d6; }
+    button { margin: 4px; padding: 8px 12px; border: none; border-radius: 6px; background: #0b84d6; color: white; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    button:hover { background: #0964a2; }
+    pre { background: #021122; padding: 10px; border-radius: 8px; max-height: 400px; overflow: auto; border: 1px solid #0b84d6; white-space: pre-wrap; word-break: break-word; }
+    .row { display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+  </style>
 </head>
 <body>
-<div class="wrap">
-<h1>Obfuscate your script</h1>
-<textarea id="luaCode" placeholder="Paste your Lua code here..."></textarea>
-<div class="row">
-<input type="file" id="fileInput" accept=".lua">
-<button onclick="uploadScript()">Obfuscate</button>
-<button onclick="copyFetcher()">Copy Fetcher</button>
-<button onclick="downloadFetcher()">Download Fetcher</button>
-</div>
-<pre id="outputArea"></pre>
-</div>
-<script>
-function rndKey(len=12){
-    const chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let s=""; for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*chars.length)];
-    return s;
-}
+  <div class="wrap">
+    <h1>Obfuscate Your Lua Script</h1>
+    <textarea id="luaCode" placeholder="Paste your Lua code here..."></textarea>
+    <div class="row">
+      <input type="file" id="fileInput" accept=".lua" />
+      <button onclick="obfuscateScript()">Obfuscate</button>
+    </div>
+    <pre id="outputArea"></pre>
+    <div class="row">
+      <button id="copyButton" style="display: none;" onclick="copyToClipboard()">Copy to Clipboard</button>
+      <button id="downloadButton" style="display: none;" onclick="downloadFile()">Download .lua</button>
+    </div>
+  </div>
 
-// Convert string to Lua obfuscated string.char
-function luaObfuscate(str){
-    return str.split('').map(c=>`string.char(${c.charCodeAt(0)})`).join('..');
-}
+  <script>
+    const apiURL = "https://obfuscation-api-0quo.onrender.com/";
 
-// Handle file input
-document.getElementById("fileInput").addEventListener("change", function(e){
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(evt){
-        document.getElementById("luaCode").value = evt.target.result;
+    function rndKey(len = 12) {
+      const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let s = "";
+      for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return s;
     }
-    reader.readAsText(file);
-});
 
-async function uploadScript(){
-    const code = document.getElementById("luaCode").value.trim();
-    if(!code) return alert("Enter Lua code to upload.");
+    function luaObfuscate(str) {
+      return str.split('').map(c => `string.char(${c.charCodeAt(0)})`).join('..');
+    }
 
-    const key = rndKey();
-    const apiURL = "https://obfuscation-api-0qvo.onrender.com/upload"; // Your API URL
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
 
-    try {
-        const res = await fetch(apiURL, {
-            method: "POST",
-            headers: {
-                "Content-Type":"application/json",
-                "Authorization": "Bearer " + key
-            },
-            body: JSON.stringify({ lua: code })
+    async function obfuscateScript() {
+      const code = document.getElementById("luaCode").value.trim();
+      if (!code) {
+        const fileInput = document.getElementById("fileInput");
+        if (fileInput.files.length === 0) return alert("Please provide Lua code or select a file.");
+        try {
+          const fileContent = await readFile(fileInput.files[0]);
+          code = fileContent.trim();
+        } catch (e) {
+          return alert("Error reading file: " + e);
+        }
+      }
+
+      const key = rndKey();
+      try {
+        const res = await fetch(apiURL + "upload", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + key
+          },
+          body: JSON.stringify({ lua: code })
         });
         const text = await res.text();
-        if(!res.ok) return alert("Upload failed: "+text);
+        if (!res.ok) return alert("Upload failed: " + text);
 
         const obfKey = luaObfuscate(key);
         const fetcher = `-- Roblox Lua Fetcher
-local HttpService=game:GetService("HttpService")
-local key=${obfKey}
-local url="https://obfuscation-api-0qvo.onrender.com/fetch"
-local s,res=pcall(function() return HttpService:GetAsync(url.."?key="..key) end)
-if s then local f=loadstring(res) if type(f)=="function" then f() end end`;
+local HttpService = game:GetService("HttpService")
+local key = ${obfKey}
+local url = "${apiURL}fetch"
+local s, res = pcall(function() return HttpService:GetAsync(url .. "?key=" .. key) end)
+if s then
+  local f = loadstring(res)
+  if type(f) == "function" then f() end
+end`;
 
-        document.getElementById("outputArea").textContent = fetcher;
-        document.getElementById("outputArea").dataset.key = key;
+        document.getElementById("outputArea").textContent = `Upload Success!
 
-    } catch(e){
-        alert("Error uploading: "+e);
+Your Key: ${key}
+
+Roblox Fetcher:
+${fetcher}`;
+
+        document.getElementById("copyButton").style.display = "inline-block";
+        document.getElementById("downloadButton").style.display = "inline-block";
+      } catch (e) {
+        alert("Error uploading: " + e);
+      }
     }
-}
 
-// Copy fetcher to clipboard
-function copyFetcher(){
-    const fetcher = document.getElementById("outputArea").textContent;
-    if(!fetcher) return alert("Nothing to copy!");
-    navigator.clipboard.writeText(fetcher);
-    alert("Fetcher copied to clipboard!");
-}
+    function copyToClipboard() {
+      const output = document.getElementById("outputArea");
+      navigator.clipboard.writeText(output.textContent)
+        .then(() => alert("Code copied to clipboard!"))
+        .catch(err => alert("Failed to copy text: " + err));
+    }
 
-// Download fetcher as .lua
-function downloadFetcher(){
-    const fetcher = document.getElementById("outputArea").textContent;
-    if(!fetcher) return alert("Nothing to download!");
-    const blob = new Blob([fetcher], {type:"text/plain"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "fetcher.lua";
-    a.click();
-}
-</script>
+    function downloadFile() {
+      const output = document.getElementById("outputArea");
+      const blob = new Blob([output.textContent], { type: "application/octet-stream" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "obfuscated_script.lua";
+      link.click();
+    }
+  </script>
 </body>
 </html>
